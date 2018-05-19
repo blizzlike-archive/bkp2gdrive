@@ -1,1 +1,3 @@
 rc.lua
+*.key
+*.key.pub

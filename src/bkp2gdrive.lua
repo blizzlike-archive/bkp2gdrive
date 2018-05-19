@@ -15,8 +15,10 @@ function bkp2gdrive.backup_database(self)
   end
   local archive = '/tmp/databases-' .. os.time() .. 'tar.xz'
   os.execute('tar cJf ' .. archive .. ' -C ' .. workdir .. ' ./databases')
-  os.execute('rm -rf ' .. workdir)
-  return archive
+  os.execute('cat ' .. archive .. ' | openssl rsautl -encrypt -pubin -inkey ' ..
+    config.rsa.pubkey .. ' > ' .. archive .. '.enc')
+  os.execute('rm -rf ' .. workdir .. ' ' .. archive)
+  return archive .. '.enc'
 end
 
 function bkp2gdrive.config(self, file)
@@ -33,7 +35,7 @@ function bkp2gdrive.run(self)
     local fd = io.open(archive, 'rb')
     gdrive:upload(config.gdrive.apiKey, config.gdrive.folder, {
       name = archive,
-      mime = 'application/x-compressed-tar',
+      mime = 'application/octet-stream',
       size = fd:seek('end'),
       content = fd:read('*a')
     })

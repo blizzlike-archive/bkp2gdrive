@@ -9,6 +9,9 @@ return {
     apiKey = '<google-api-token>',
     folder = 'gdrive-folder-id'
   },
+  rsa = {
+    pubkey = '/path/to/pub.key'
+  },
   databases = {
     'chars',
     'logon',
