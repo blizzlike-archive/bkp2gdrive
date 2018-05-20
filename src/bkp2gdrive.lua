@@ -39,13 +39,16 @@ function bkp2gdrive.run(self)
       local folder = gdrive:mkdir(oauth.access_token, config.gdrive.folder)
       if folder then
         local fd = io.open(archive, 'rb')
-        gdrive:upload(oauth.access_token, folder.id, {
+        local file = gdrive:upload(oauth.access_token, folder.id, {
           name = archive,
           mime = 'application/octet-stream',
           size = fd:seek('end'),
           content = fd:read('*a')
         })
         fd:close()
+        if file then
+          gdrive:chown(oauth.access_token, file.id, config.gdrive.owner)
+        end
       else
         print('Cannot create/get folder')
       end

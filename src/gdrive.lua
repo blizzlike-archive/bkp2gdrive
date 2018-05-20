@@ -21,6 +21,37 @@ local _toTable = function(s)
   return json.decode(s)
 end
 
+function gdrive.chown(self, bearer, id, email)
+  if type(folder) == 'string' then
+    local permission = _toJson({
+      role = 'owner',
+      type = 'user',
+      emailAddress = email
+    })
+    local headers = {
+      ['Authorization'] = 'Bearer ' .. bearer,
+      ['Content-Type'] = 'application/json; charset=UTF-8',
+      ['Content-Length'] = #permission
+    }
+
+    local repsBody = {}
+    local resp, respStatus, respHeader = https.request({
+      method = 'POST',
+      headers = headers,
+      source = ltn12.source.string(permission),
+      sink = ltn12.sink.table(respBody)
+      url = gdrive.api .. '/drive/v3/files/' .. id ..
+        '/permissions?transferOwnership=true&sendNotificationEmail=false'
+    })
+
+    if respStatus == 200 then
+      local c = ''
+      for _, v in pairs(respBody) do c = c .. v end
+      return _toTable(c)
+    end
+  end
+end
+
 function gdrive.mkdir(self, bearer, folder)
   if type(folder) == 'string' then
     local metadata = _toJson({
@@ -45,8 +76,7 @@ function gdrive.mkdir(self, bearer, folder)
     if respStatus == 200 then
       local c = ''
       for _, v in pairs(respBody) do c = c .. v end
-      local response = _toTable(c)
-      return response
+      return _toTable(c)
     end
   end
 end
@@ -137,7 +167,9 @@ function gdrive.upload(self, bearer, folder, file)
       })
 
       if respStatus == 200 or respStatus == 201 then
-        return true
+        local c = ''
+        for _, v in pairs(respBody) do c = c .. v end
+        return _toTable(c)
       end
     end
   end
