@@ -6,9 +6,12 @@ return {
     pass = 'backup'
   },
   gdrive = {
-    apiKey = '<google-api-token>',
-    folder = 'gdrive-folder-id'
+    folder = 'bkp2gdrive'
   },
+  oauth = {
+    email = 'your@service.mail',
+    key = '<service-key>'
+  }
   rsa = {
     pubkey = '/path/to/pub.key'
   },
