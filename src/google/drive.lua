@@ -2,13 +2,11 @@ local cjson = require('cjson')
 local https = require('ssl.https')
 local ltn12 = require('ltn12')
 
-local digest = require('openssl.digest')
-local pkey = require('openssl.pkey')
-
-local base64 = require('ee5_base64')
-
-local gdrive = {
+local drive = {
   api = 'https://www.googleapis.com',
+  scopes = {
+    drivefile = 'https://www.googleapis.com/auth/drive.file'
+  }
 }
 
 local _toJson = function(t)
@@ -21,7 +19,7 @@ local _toTable = function(s)
   return json.decode(s)
 end
 
-function gdrive.chown(self, bearer, id, email)
+function drive.chown(self, bearer, id, email)
   if type(folder) == 'string' then
     local permission = _toJson({
       role = 'owner',
@@ -40,7 +38,7 @@ function gdrive.chown(self, bearer, id, email)
       headers = headers,
       source = ltn12.source.string(permission),
       sink = ltn12.sink.table(respBody)
-      url = gdrive.api .. '/drive/v3/files/' .. id ..
+      url = drive.api .. '/drive/v3/files/' .. id ..
         '/permissions?transferOwnership=true&sendNotificationEmail=false'
     })
 
@@ -52,7 +50,7 @@ function gdrive.chown(self, bearer, id, email)
   end
 end
 
-function gdrive.mkdir(self, bearer, folder)
+function drive.mkdir(self, bearer, folder)
   if type(folder) == 'string' then
     local metadata = _toJson({
       name = folder,
@@ -70,7 +68,7 @@ function gdrive.mkdir(self, bearer, folder)
       headers = headers,
       source = ltn12.source.string(metadata),
       sink = ltn12.sink.table(respBody)
-      url = gdrive.api .. '/upload/drive/v3/files?uploadType=media'
+      url = drive.api .. '/upload/drive/v3/files?uploadType=media'
     })
 
     if respStatus == 200 then
@@ -81,55 +79,7 @@ function gdrive.mkdir(self, bearer, folder)
   end
 end
 
-function gdrive.oauth(self, email, key)
-  base64.alpha('base64url')
-  local header = _toJson({
-    alg = 'RS256',
-    typ = 'JWT'
-  })
-  local claimset = _toJson({
-    iss = email,
-    scope = 'https://www.googleapis.com/auth/drive.file',
-    aud = 'https://www.googleapis.com/oauth2/v4/token',
-    exp = os.time() + 1800, -- 30 mins valid
-    iat = os.time()
-  })
-  local jwt = base64.encode(header) .. '.' .. base64.encode(claimset)
-  local jws = base64.encode(gdrive:sign(key, jwt))
-  jwt = jwt .. '.' .. jws
-  local body = 'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer' ..
-      '&assertion=' .. jwt
-  local respBody = {}
-  local resp, respStatus, respHeader = https.request({
-    method = 'POST',
-    headers = {
-      ['Content-Type'] = 'application/x-www-form-urlencoded',
-      ['Content-Length'] = #body
-    },
-    source = ltn12.source.string(body),
-    sink = ltn12.sink.table(respBody),
-    url = 'https://www.googleapis.com/oauth2/v4/token'
-  })
-
-  if respHeader and respHeader['content-type']:match('application/json') then
-    local c = ''
-    for _, v in pairs(respBody) do c = c .. v end
-    local response = _toTable(c)
-    if response.access_token then return response end
-  end
-end
-
-function gdrive.sign(self, key, jwt)
-  local privkey = pkey.new({ type = 'RSA' })
-  privkey:setPrivateKey(key, 'PEM')
-  local data = digest.new('sha256')
-  data:update(jwt)
-
-  if not privkey then return nil, 'cannot read privkey' end
-  return privkey:sign(data)
-end
-
-function gdrive.upload(self, bearer, folder, file)
+function drive.upload(self, bearer, folder, file)
   if type(folder) == 'string' and file.name and
       file.mime and file.size and file.content then
     local metadata = _toJson({
@@ -148,7 +98,7 @@ function gdrive.upload(self, bearer, folder, file)
       method = 'POST',
       headers = headers,
       source = ltn12.source.string(metadata),
-      url = gdrive.api .. '/upload/drive/v3/files?uploadType=resumable'
+      url = drive.api .. '/upload/drive/v3/files?uploadType=resumable'
     })
 
     local location = respHeader['Location']
@@ -175,4 +125,4 @@ function gdrive.upload(self, bearer, folder, file)
   end
 end
 
-return gdrive
+return drive

@@ -1,4 +1,4 @@
-TAG?="latest"
+TAG?=master
 
 docker:
 	docker build -t blizzlike/bkp2gdrive:${TAG} --no-cache -f Dockerfile .

@@ -14,7 +14,7 @@ RUN useradd \
   -s /bin/bash \
   -U blizzlike
 
-COPY --chown=blizzlike ${CONTRIB_DIR}/src ${APP_DIR}/bkp2gdrive
+COPY --chown=blizzlike ./src ${APP_DIR}/bkp2gdrive
 WORKDIR ${APP_DIR}
 USER blizzlike
 
