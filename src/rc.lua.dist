@@ -12,7 +12,7 @@ return {
   oauth = {
     email = 'your@service.mail',
     key = '<service-key>'
-  }
+  },
   rsa = {
     pubkey = '/path/to/pub.key'
   },

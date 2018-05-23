@@ -51,7 +51,7 @@ function drive.chown(self, bearer, id, email)
 end
 
 function drive.list(self, bearer, q, token)
-  if type(q) then
+  if type(q) == 'string' then
     local params = '?q=' .. q
     if page then params = params .. '&pageToken=' .. token end
     local headers = {
@@ -65,7 +65,15 @@ function drive.list(self, bearer, q, token)
       sink = ltn12.sink.table(respBody),
       url = drive.api .. '/drive/v3/files?q=' .. query
     })
+
+    if respStatus == 200 then
+      local d = ''
+      for _, v in pairs(respBody) do d = d .. v end
+      return _toTable(d)
+    end
+    return nil, 'google api returned ' .. respStatus
   end
+  return nil, 'parameter q has to be type of string'
 end
 
 function drive.mkdir(self, bearer, folder)
