@@ -50,6 +50,24 @@ function drive.chown(self, bearer, id, email)
   end
 end
 
+function drive.list(self, bearer, q, token)
+  if type(q) then
+    local params = '?q=' .. q
+    if page then params = params .. '&pageToken=' .. token end
+    local headers = {
+      ['Authorization'] = 'Bearer ' .. bearer,
+    }
+
+    local respBody = {}
+    local resp, respStatus, respHeader = https.request({
+      method = 'GET',
+      headers = headers,
+      sink = ltn12.sink.table(respBody),
+      url = drive.api .. '/drive/v3/files?q=' .. query
+    })
+  end
+end
+
 function drive.mkdir(self, bearer, folder)
   if type(folder) == 'string' then
     local metadata = _toJson({

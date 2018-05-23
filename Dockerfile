@@ -7,7 +7,7 @@ ENV APP_DIR /home/blizzlike
 RUN apt-get update && \
   apt-get install -y lua5.2 lua-cjson lua-sec \
     lua-socket lua-luaossl \
-    openssl mariadb-client xz-utils
+    openssl mariadb-client xz-utils vim
 
 RUN useradd \
   -m -d ${APP_DIR} \
