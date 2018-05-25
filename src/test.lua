@@ -22,6 +22,14 @@ local f, s, e = files:create(auth.access_token, {
 }, nil)
 print((s or '-') .. ' - ' .. (e or '-'))
 
+local f, s, e = files:create(auth.access_token, {
+  mimetype = 'plain/text',
+  name = 'test.txt',
+  size = 4,
+  content = 'test'
+}, { [1] = f.id })
+print((s or '-') .. ' - ' .. (e or '-'))
+
 print('# testing files.list')
 local f, s, e = files:list(auth.access_token, nil, nil)
 print((s or '-') .. ' - ' .. (e or '-'))
