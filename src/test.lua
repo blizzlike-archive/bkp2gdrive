@@ -15,16 +15,18 @@ print('jwt: ' .. (jwt or '-') .. ' - ' .. (e or '-'))
 local auth, e = oauth:request(jwt)
 print('auth: ' .. (auth.access_token or '-') .. ' - ' .. (e or '-'))
 
-print('# testing files.list')
-local f, s, e = files:list(auth.access_token, nil, nil)
-print((s or '-') .. ' - ' .. (e or '-'))
-for k, v in pairs((f or {}).files) do
-  print(v.id)
-end
-
 print('# test files.create')
 local f, s, e = files:create(auth.access_token, {
   mimetype = files.mimetypes.directory,
   name = 'test'
 }, nil)
 print((s or '-') .. ' - ' .. (e or '-'))
+
+print('# testing files.list')
+local f, s, e = files:list(auth.access_token, nil, nil)
+print((s or '-') .. ' - ' .. (e or '-'))
+for k, v in pairs((f or {}).files) do
+  print(v.id .. ' - ' .. v.name)
+  local d,e = files:delete(auth.access_token, v.id)
+  if not d then print(e) end
+end
