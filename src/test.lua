@@ -3,6 +3,7 @@
 local oauth = require('google.oauth')
 local config = dofile(arg[1])
 local files = require('google.drive.files')
+local perm = require('google.drive.permissions')
 local gdriveclient = require('google.drive.client')
 
 print('# testing oauth')
@@ -22,12 +23,26 @@ local f, s, e = files:create(auth.access_token, {
 }, nil)
 print((s or '-') .. ' - ' .. (e or '-'))
 
+local f, s, e = perm:create(auth.access_token, f.id, {
+  role = perm.roles.reader,
+  type = perm.types.user,
+  emailAddress = config.gdrive.email
+})
+print((s or '-') .. ' - ' .. (e or '-'))
+
 local f, s, e = files:create(auth.access_token, {
   mimetype = 'plain/text',
   name = 'test.txt',
   size = 4,
   content = 'test'
 }, { [1] = f.id })
+print((s or '-') .. ' - ' .. (e or '-'))
+
+local f, s, e = perm:create(auth.access_token, f.id, {
+  role = perm.roles.owner,
+  type = perm.types.user,
+  emailAddress = config.gdrive.email
+})
 print((s or '-') .. ' - ' .. (e or '-'))
 
 print('# testing files.list')
