@@ -15,7 +15,7 @@ RUN useradd \
   -U blizzlike
 
 COPY --chown=blizzlike ./src ${APP_DIR}/bkp2gdrive
-WORKDIR ${APP_DIR}
+WORKDIR ${APP_DIR}/bkp2gdrive
 USER blizzlike
 
 RUN install -d ${APP_DIR}/bkp2gdrive/config
