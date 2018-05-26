@@ -8,8 +8,8 @@ before_script:
   - docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
 
 stages:
-    name: docker
-    if: branch = master
+    - name: docker
+      if: branch = master
 
 jobs:
   include:
