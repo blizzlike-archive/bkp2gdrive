@@ -4,14 +4,30 @@ this is a lua script to backup your wow server to a google drive account.
 
 ## installation
 
+### google drive
+
+First of all you have to enable the google drive api via the
+[developer console](https://console.developers.google.com)
+and create a service account with role **editor**.
+After that browse to your google drive and create a new directory
+and change the ownership to the service mail address of your
+service account (attention: this may take a while).
+
+    https://drive.google.com/drive/folders/<folder-id>
+
+Now just copy the id from the folders url in your browsers address bar
+and insert it into the `rc.lua`.
+
+### debian / ubuntu
+
     apt-get install lua-socket lua-sec lua-cjson
 
 ### docker
 
-    docker pull blizzlike/bkp2gdrive:latest
+    docker pull blizzlike/bkp2gdrive:master
     docker run --name b2g -d \
       -v /path/to/config/dir:/home/blizzlike/bkp2gdrive/config \
-      blizzlike/bkp2gdrive:latest
+      blizzlike/bkp2gdrive:master
 
 ### mysql user
 
