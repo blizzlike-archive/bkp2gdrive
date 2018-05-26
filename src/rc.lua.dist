@@ -7,7 +7,7 @@ return {
   },
   gdrive = {
     owner = 'email@drive.owner',
-    folder = 'bkp2gdrive'
+    folder = 'folder-id'
   },
   oauth = {
     email = 'your@service.mail',

@@ -1,5 +1,6 @@
 local oauth = require('google.oauth')
-local drive = require('google.drive')
+local files = require('google.drive.files')
+local driveclient = require('google.drive.client')
 
 local bkp2gdrive = {}
 local config = nil
@@ -8,11 +9,10 @@ function bkp2gdrive.backup_database(self)
   local workdir = '/tmp/bkp2gdrive'
   os.execute('install -d ' .. workdir .. '/databases')
   for _, v in pairs(config.databases) do
---    os.execute(
---      'mysqldump -h' .. config.db.host .. ' -P' .. config.db.port ..
---        ' -u' .. config.db.user .. ' -p' .. config.db.pass .. ' ' .. v ..
---        ' > ' .. workdir .. '/databases/' .. v .. '.sql')
-      os.execute('echo foo > ' .. workdir .. '/databases/' .. v .. '.foo')
+    os.execute(
+      'mysqldump -h' .. config.db.host .. ' -P' .. config.db.port ..
+        ' -u' .. config.db.user .. ' -p' .. config.db.pass .. ' ' .. v ..
+        ' > ' .. workdir .. '/databases/' .. v .. '.sql')
   end
   local archive = '/databases-' .. os.time() .. 'tar.xz'
   os.execute('tar cJf ' .. workdir .. archive .. ' -C ' .. workdir .. ' ./databases')
@@ -34,28 +34,22 @@ function bkp2gdrive.run(self)
   config = bkp2gdrive:config(arg[1] or './rc.lua')
   if config then
     local archive = bkp2gdrive:backup_database()
+    local _, basename = archive:match('(.-)([^\\/]-%.?([^%.\\/]*))$')
     local jwt = oauth:create_jwt(
       'RS256', config.oauth.email, config.oauth.key,
-      drive.scopes.drivefile, nil)
+      driveclient.scopes.drivefile, nil)
     local auth = oauth:request(jwt)
     if auth then
       print('Got google oauth bearer')
-      local folder = drive:mkdir(auth.access_token, config.gdrive.folder)
-      if folder then
-        local fd = io.open(archive, 'rb')
-        local file = drive:upload(auth.access_token, folder.id, {
-          name = archive,
-          mime = 'application/octet-stream',
-          size = fd:seek('end'),
-          content = fd:read('*a')
-        })
-        fd:close()
-        if file then
-          drive:chown(auth.access_token, file.id, config.gdrive.owner)
-        end
-      else
-        print('Cannot create/get folder')
-      end
+      local fd = io.open(archive, 'rb')
+      local file, s, e = files:create(auth.access_token, {
+        name = basename,
+        mimetype = 'application/octet-stream',
+        size = fd:seek('end'),
+        data = fd:read('*a')
+      }, { config.gdrive.folder })
+      fd:close()
+      print('upload: ' .. (s or '-') .. ' ' .. (e or '-'))
     else
       print('Cannot get google oauth bearer')
     end
