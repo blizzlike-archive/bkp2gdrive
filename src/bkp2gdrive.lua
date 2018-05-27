@@ -14,7 +14,7 @@ function bkp2gdrive.backup_database(self)
         ' -u' .. config.db.user .. ' -p' .. config.db.pass .. ' ' .. v ..
         ' > ' .. workdir .. '/databases/' .. v .. '.sql')
   end
-  local archive = '/databases-' .. os.time() .. 'tar.xz'
+  local archive = '/databases-' .. os.time() .. '.tar.xz'
   os.execute('tar cJf ' .. workdir .. archive .. ' -C ' .. workdir .. ' ./databases')
     os.execute('openssl enc -aes-256-cbc -salt -in ' ..
       workdir .. archive ..
