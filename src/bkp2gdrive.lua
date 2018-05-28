@@ -46,8 +46,8 @@ function bkp2gdrive.run(self)
       local file, s, e = files:create(auth.access_token, {
         name = basename,
         mimetype = 'application/octet-stream',
-        size = fd:seek('end'),
-        data = fd:read('*a')
+        data = fd:read('*a'),
+        size = fd:seek('end')
       }, { config.gdrive.folder })
       fd:close()
       print('upload: ' .. (s or '-') .. ' ' .. (e or '-'))
