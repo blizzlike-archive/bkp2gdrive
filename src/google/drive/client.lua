@@ -9,56 +9,36 @@ local client = {
   }
 }
 
-local _toJson = function(t)
-  local json = cjson.new()
-  return json.encode(t)
-end
-
-local _toTable = function(s)
-  local json = cjson.new()
-  return json.decode(s)
-end
-
-function client.request(self, bearer, context, method, data, header)
-  local header = {
-    ['Authorization'] = 'Bearer ' .. bearer,
-  }
-  local body = nil
-  local headers = {}
+function client.request(self, url, method, data, headers)
   local source = nil
 
   if data then
-    if type(data) == 'table' then
-      body = _toJson(data)
-      headers = {
-        ['Content-Type'] = 'application/json; charset=UTF-8',
-        ['Content-Length'] = #(body)
-      }
-      source = ltn12.source.string(body)
-    else
-      source = ltn12.source.string(data)
-    end
-  end
-
-  if header then
-    for k, v in pairs(header) do headers[k] = v end
+    source = ltn12.source.string(data)
   end
 
   local respBody = {}
-  local resp, respStatus, respHeader = https.request({
+  local _, respStatus, respHeader = https.request({
     method = method,
     headers = headers,
     source = source,
     sink = ltn12.sink.table(respBody),
-    url = client.api .. context
+    url = url
   })
 
-  if ((respHeader or {})['content-type'] or ''):match('application/json') then
-    local d = ''
-    for _, v in pairs(respBody) do d = d .. v end
-    return _toTable(d), respStatus, respHeader
-  end
-  return nil, respStatus, respHeader, 'response is not in json format'
+  local d = ''
+  for _, v in pairs(respBody) do d = d .. v end
+  print(d)
+  return d, respStatus, respHeader
+end
+
+function client.toJson(self, t)
+  local json = cjson.new()
+  return json.encode(t)
+end
+
+function client.toTable(self, s)
+  local json = cjson.new()
+  return json.decode(s)
 end
 
 return client

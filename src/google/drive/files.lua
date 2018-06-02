@@ -1,52 +1,113 @@
 local client = require('google.drive.client')
 
-local files = {
+local _M = {
   mimetypes = {
     directory = 'application/vnd.google-apps.folder'
   }
 }
 
-function files.create(self, bearer, file, parents)
-  if type(file) == 'table' and file.name and
-      file.mimetype then
-    local metadata = {
-      name = file.name,
-      parents = parents
-    }
-    local h = nil
-
-    if file.mimetype == files.mimetypes.directory then
-      metadata.mimeType = file.mimetype
-    else
-      if not file.size then return nil, nil, 'table file has no size attribute' end
-      h = {
-        ['X-Upload-Content-Type'] = file.mimetype,
-        ['X-Upload-Content-Length'] = file.size
-      }
-    end
-
-    local response, status, header, err = client:request(
-      bearer, '/drive/v3/files', 'POST', metadata, h)
-
-    if response then
-      if (header or {})['Location'] then
-        local h = {
-          ['Content-Type'] = file.mimetype,
-          ['Content-Length'] = file.size
-        }
-        response, status, _, err = client.request({
-          api = header['Location']
-        }, bearer, '', 'POST', file.data, h)
-        if not response then return nil, status, err end
-      end
-      return response
-    end
-    return nil, status, err
-  end
-  return nil, nil, 'parameter file has to be of type table'
+local _getfilesize = function(file)
+  local fd = io.open(file, 'rb')
+  local size = fd:seek('end')
+  fd:close()
+  return size
 end
 
-function files.delete(self, bearer, id)
+function _M.create_metadata(self, bearer, file)
+  local url = client.api .. '/upload/drive/v3/files'
+  local metadata = {
+    name = file.name,
+    parents = file.parents
+  }
+
+  local headers = {
+    ['Authorization'] = 'Bearer ' .. bearer,
+    ['Content-Type'] = 'application/json; charset=UTF-8'
+  }
+
+  if file.mimetype == _M.mimetypes.directory then
+    metadata.mimeType = file.mimetype
+  else
+    url = url .. '?uploadType=resumable'
+    headers['X-Upload-Content-Type'] = file.mimetype
+    headers['X-Upload-Content-Length'] = file.size
+  end
+
+  headers['Content-Length'] = #metadata
+
+  local _, status, headers = client:request(
+    url, 'POST', client:toJson(metadata), headers)
+
+  if status == 200 then
+    return true, headers['location']
+  end
+  return nil, nil, 'cannot initialize resumable upload session'
+end
+
+function _M.create_upload(self, url, file, size, mimetype)
+  local headers = {
+    ['Content-Type'] = mimetype
+  }
+
+  local fd = io.open(file, 'rb')
+  local chunkstart = 0
+  local chunkend = 0
+  local maxchunksize = 262144
+  while chunkend < (size - 1) do
+    chunkend = chunkstart + maxchunksize - 1
+    if chunkend > (size - 1) then chunkend = size - 1 end
+
+    headers['Content-Length'] = chunkend - chunkstart + 1
+    headers['Content-Range'] = 'bytes ' .. chunkstart .. '-' .. chunkend .. '/' .. size
+    local chunk = fd:read(chunkend - chunkstart + 1)
+
+    print('uploading: ' .. chunkstart .. '-' .. chunkend .. ' of ' .. size .. ' #' .. #chunk)
+
+    local response, status = client:request(
+      url, 'POST', chunk, headers)
+
+    print((status or '-'))
+
+    if status == 200 or status == 201 then
+      fd:close()
+      return client:toTable(response)
+    end
+    if status == 308 then
+      chunkstart = chunkend + 1
+    end
+    if status == 400 then
+      fd:close()
+      return nil, response
+    end
+  end
+  fd:close()
+  return nil, 'cannot completely upload file'
+end
+
+function _M.create(self, bearer, file, mimetype, parents)
+  local _, filename = file:match('(.-)([^\\/]-%.?([^%.\\/]*))$')
+  local metadata = {
+    name = filename,
+    parents = parents,
+    size = _getfilesize(file),
+    mimetype = mimetype
+  }
+  local success, location, err = _M:create_metadata(
+    bearer, metadata)
+
+  if success then
+    if location then
+      if _M:create_upload(location, file, metadata.size, mimetype) then
+        return true
+      end
+    end
+    return true
+  end
+  return nil, err
+end
+
+-- deprecated
+function _M.delete(self, bearer, id)
   if type(id) == 'string' then
     local response, status, header, err = client:request(
       bearer, '/drive/v3/files/' .. id, 'DELETE', nil, nil)
@@ -56,7 +117,8 @@ function files.delete(self, bearer, id)
   return nil, 'id has to be provided'
 end
 
-function files.list(self, bearer, q, token)
+-- deprecated
+function _M.list(self, bearer, q, token)
   local separator = '?'
   local params = ''
 
@@ -75,4 +137,4 @@ function files.list(self, bearer, q, token)
   return nil, status, err
 end
 
-return files
+return _M

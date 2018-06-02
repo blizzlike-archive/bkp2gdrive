@@ -35,22 +35,22 @@ function bkp2gdrive.run(self)
   config = bkp2gdrive:config(arg[1] or './rc.lua')
   if config then
     local archive = bkp2gdrive:backup_database()
-    local _, basename = archive:match('(.-)([^\\/]-%.?([^%.\\/]*))$')
     local jwt = oauth:create_jwt(
       'RS256', config.oauth.email, config.oauth.key,
       driveclient.scopes.drivefile, nil)
     local auth = oauth:request(jwt)
     if auth then
       print('Got google oauth bearer')
-      local fd = io.open(archive, 'rb')
-      local file, s, e = files:create(auth.access_token, {
-        name = basename,
-        mimetype = 'application/octet-stream',
-        data = fd:read('*a'),
-        size = fd:seek('end')
-      }, { config.gdrive.folder })
-      fd:close()
-      print('upload: ' .. (s or '-') .. ' ' .. (e or '-'))
+      print('Uploading ' .. archive)
+      local file, err = files:create(
+        auth.access_token,
+        archive, 'application/octet-stream',
+        config.gdrive.folder)
+
+      if not file then
+        print(err)
+        os.exit(1)
+      end
     else
       print('Cannot get google oauth bearer')
     end

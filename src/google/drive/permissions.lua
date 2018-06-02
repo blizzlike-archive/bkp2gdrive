@@ -17,15 +17,27 @@ local _M = {
 }
 
 function _M.create(self, bearer, id, permission)
-  if type(id) == 'string' and type(permission) == 'table' and
-      permission.role and permission.type then
-    local response, status, header, err = client:request(
-      bearer, '/drive/v3/files/' .. id .. '/permissions', 'POST',
-      permission, nil)
-    if response then return response end
-    return nil, 'cannot set permission'
+  local url = client.api .. '/drive/v3/files/' .. id .. 'permissions'
+  local metadata = {
+    role = permission.role,
+    type = permission.type,
+    emailAddress = permission.emailAddress
+  }
+
+  local headers = {
+    ['Authorization'] = 'Bearer ' .. bearer,
+    ['Content-Type'] = 'application/json; charset=UTF-8',
+    ['Content-Length'] = #metadata
+  }
+
+  local response, status, headers = client:request(
+    url, 'POST', client:toJson(metadata), headers)
+
+  if ((headers or {})['content-type'] or ''):match('application/json') then
+    return client:toTable(response)
   end
-  return nil, 'id has to be provided'
+
+  return nil, response
 end
 
 return _M
