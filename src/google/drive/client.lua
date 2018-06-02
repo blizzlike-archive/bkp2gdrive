@@ -27,7 +27,6 @@ function client.request(self, url, method, data, headers)
 
   local d = ''
   for _, v in pairs(respBody) do d = d .. v end
-  print(d)
   return d, respStatus, respHeader
 end
 

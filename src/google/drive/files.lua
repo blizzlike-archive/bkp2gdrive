@@ -15,7 +15,6 @@ end
 
 function _M.create_metadata(self, bearer, file)
   local url = client.api .. '/upload/drive/v3/files'
-  print('got file name ' .. file.name)
   local metadata = {
     name = file.name,
     parents = file.parents
@@ -63,12 +62,8 @@ function _M.create_upload(self, url, file, size, mimetype)
     headers['Content-Range'] = 'bytes ' .. chunkstart .. '-' .. chunkend .. '/' .. size
     local chunk = fd:read(chunkend - chunkstart + 1)
 
-    print('uploading: ' .. chunkstart .. '-' .. chunkend .. ' of ' .. size .. ' #' .. #chunk)
-
     local response, status = client:request(
       url, 'POST', chunk, headers)
-
-    print((status or '-'))
 
     if status == 200 or status == 201 then
       fd:close()
@@ -88,7 +83,6 @@ end
 
 function _M.create(self, bearer, file, mimetype, parents)
   local _, filename = file:match('(.-)([^\\/]-%.?([^%.\\/]*))$')
-  print('push metadata with filename ' .. filename)
   local metadata = {
     name = filename,
     parents = parents,
