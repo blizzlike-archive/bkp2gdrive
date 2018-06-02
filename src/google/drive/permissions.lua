@@ -17,12 +17,12 @@ local _M = {
 }
 
 function _M.create(self, bearer, id, permission)
-  local url = client.api .. '/drive/v3/files/' .. id .. 'permissions'
-  local metadata = {
+  local url = client.api .. '/drive/v3/files/' .. id .. '/permissions'
+  local metadata = client:toJson({
     role = permission.role,
     type = permission.type,
     emailAddress = permission.emailAddress
-  }
+  })
 
   local headers = {
     ['Authorization'] = 'Bearer ' .. bearer,
@@ -31,7 +31,7 @@ function _M.create(self, bearer, id, permission)
   }
 
   local response, status, headers = client:request(
-    url, 'POST', client:toJson(metadata), headers)
+    url, 'POST', metadata, headers)
 
   if ((headers or {})['content-type'] or ''):match('application/json') then
     return client:toTable(response)

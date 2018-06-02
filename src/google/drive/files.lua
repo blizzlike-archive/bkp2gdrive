@@ -15,6 +15,7 @@ end
 
 function _M.create_metadata(self, bearer, file)
   local url = client.api .. '/upload/drive/v3/files'
+  print('got file name ' .. file.name)
   local metadata = {
     name = file.name,
     parents = file.parents
@@ -33,10 +34,11 @@ function _M.create_metadata(self, bearer, file)
     headers['X-Upload-Content-Length'] = file.size
   end
 
-  headers['Content-Length'] = #metadata
+  local body = client:toJson(metadata)
+  headers['Content-Length'] = #body
 
   local _, status, headers = client:request(
-    url, 'POST', client:toJson(metadata), headers)
+    url, 'POST', body, headers)
 
   if status == 200 then
     return true, headers['location']
@@ -86,6 +88,7 @@ end
 
 function _M.create(self, bearer, file, mimetype, parents)
   local _, filename = file:match('(.-)([^\\/]-%.?([^%.\\/]*))$')
+  print('push metadata with filename ' .. filename)
   local metadata = {
     name = filename,
     parents = parents,
@@ -97,9 +100,7 @@ function _M.create(self, bearer, file, mimetype, parents)
 
   if success then
     if location then
-      if _M:create_upload(location, file, metadata.size, mimetype) then
-        return true
-      end
+      return _M:create_upload(location, file, metadata.size, mimetype)
     end
     return true
   end

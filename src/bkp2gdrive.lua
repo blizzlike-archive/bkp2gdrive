@@ -1,5 +1,6 @@
 local oauth = require('google.oauth')
 local files = require('google.drive.files')
+local permissions = require('google.drive.permissions')
 local driveclient = require('google.drive.client')
 
 local bkp2gdrive = {}
@@ -33,29 +34,44 @@ end
 
 function bkp2gdrive.run(self)
   config = bkp2gdrive:config(arg[1] or './rc.lua')
-  if config then
-    local archive = bkp2gdrive:backup_database()
-    local jwt = oauth:create_jwt(
-      'RS256', config.oauth.email, config.oauth.key,
-      driveclient.scopes.drivefile, nil)
-    local auth = oauth:request(jwt)
-    if auth then
-      print('Got google oauth bearer')
-      print('Uploading ' .. archive)
-      local file, err = files:create(
-        auth.access_token,
-        archive, 'application/octet-stream',
-        config.gdrive.folder)
+  if not config then
+    print('cannot read config file ' .. (arg[1] or './rc.lua'))
+    os.exit(1)
+  end
 
-      if not file then
+  local archive = bkp2gdrive:backup_database()
+  local jwt = oauth:create_jwt(
+    'RS256', config.oauth.email, config.oauth.key,
+    driveclient.scopes.drivefile, nil)
+  local auth = oauth:request(jwt)
+  if auth then
+    print('Uploading file: ' .. archive)
+    local file, err = files:create(
+      auth.access_token,
+      archive, 'application/octet-stream',
+      config.gdrive.folder)
+
+    if not file then
+      print(err)
+      os.exit(1)
+    end
+    for _, v in pairs(config.gdrive.access) do
+      print('permit ' .. v .. ' to ' .. file.id)
+      local permission, err = permissions:create(
+        auth.access_token, file.id, {
+          role = permissions.roles.reader,
+          type = permissions.types.user,
+          emailAddress = v
+      })
+      if not permission then
         print(err)
         os.exit(1)
       end
-    else
-      print('Cannot get google oauth bearer')
     end
-    os.execute('rm -rf ' .. archive)
+  else
+    print('Cannot get google oauth bearer')
   end
+  os.execute('rm -rf ' .. archive)
 end
 
 bkp2gdrive:run()

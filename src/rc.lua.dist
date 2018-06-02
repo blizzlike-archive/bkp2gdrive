@@ -6,7 +6,9 @@ return {
     pass = 'backup'
   },
   gdrive = {
-    owner = 'email@drive.owner',
+    access = {
+      'email@drive.owner'
+    },
     folder = 'folder-id'
   },
   oauth = {
