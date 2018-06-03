@@ -49,7 +49,7 @@ function bkp2gdrive.run(self)
     local file, err = files:create(
       auth.access_token,
       archive, 'application/octet-stream',
-      config.gdrive.folder)
+      { config.gdrive.folder })
 
     if not file then
       print(err)
