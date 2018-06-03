@@ -16,6 +16,7 @@ print('jwt: ' .. (jwt or '-') .. ' - ' .. (e or '-'))
 local auth, e = oauth:request(jwt)
 print('auth: ' .. (auth.access_token or '-') .. ' - ' .. (e or '-'))
 
+--[[
 print('# test files.create')
 local f, s, e = files:create(auth.access_token, {
   mimetype = files.mimetypes.directory,
@@ -44,6 +45,7 @@ local f, s, e = perm:create(auth.access_token, f.id, {
   emailAddress = config.gdrive.email
 })
 print((s or '-') .. ' - ' .. (e or '-'))
+]]--
 
 print('# testing files.list')
 local f, s, e = files:list(auth.access_token, nil, nil)

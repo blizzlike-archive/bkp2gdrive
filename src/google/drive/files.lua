@@ -101,19 +101,21 @@ function _M.create(self, bearer, file, mimetype, parents)
   return nil, err
 end
 
--- deprecated
+-- broken
 function _M.delete(self, bearer, id)
-  if type(id) == 'string' then
-    local response, status, header, err = client:request(
-      bearer, '/drive/v3/files/' .. id, 'DELETE', nil, nil)
-    if not response then return true end
-    return nil, 'not deleted'
-  end
-  return nil, 'id has to be provided'
+  local headers = {
+    ['Authorization'] = 'Bearer ' .. bearer
+  }
+  local response, status = client:request(
+    client.api .. '/drive/v3/files/' .. id, 'DELETE', nil, headers)
+  if not response then return true end
+  return nil, 'not deleted'
 end
 
--- deprecated
 function _M.list(self, bearer, q, token)
+  local headers = {
+    ['Authorization'] = 'Bearer ' .. bearer
+  }
   local separator = '?'
   local params = ''
 
@@ -125,11 +127,13 @@ function _M.list(self, bearer, q, token)
     params = params .. separator .. 'pageToken=' .. token
   end
 
-  local response, status, _, err = client:request(
-    bearer, '/drive/v3/files' .. params, 'GET', nil, nil)
+  local response, status = client:request(
+    client.api .. '/drive/v3/files' .. params, 'GET', nil, headers)
 
-  if response then return response end
-  return nil, status, err
+  if ((headers or {})['content-type'] or ''):match('application/json') then
+    return client:toTable(response)
+  end
+  return nil, status
 end
 
 return _M
